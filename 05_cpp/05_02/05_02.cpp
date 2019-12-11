@@ -8,7 +8,11 @@ enum Opcode_t  {op_UNDEFINED    = 0,
                 op_ADD          = 1, 
                 op_MULTIPLY     = 2, 
                 op_SAVE_VAL     = 3, 
-                op_OUTPUT_VAL   = 4, 
+                op_OUTPUT_VAL   = 4,
+                op_JUMP_TRUE    = 5,
+                op_JUMP_FALSE   = 6,
+                op_LESS         = 7,
+                op_EQUAL        = 8,
                 op_HALT         = 99};
 
 enum ParMode_t {POSITION_MODE   = 0, 
@@ -30,11 +34,17 @@ uint8_t get_increase_size(uint16_t instruction){
     {
     case op_ADD:
     case op_MULTIPLY:
+    case op_LESS:
+    case op_EQUAL:
         return(4);
         break;
     case op_SAVE_VAL:
     case op_OUTPUT_VAL:
         return(2);
+        break;
+    case op_JUMP_TRUE:
+    case op_JUMP_FALSE:
+        return(3);
         break;
     default:
         return(0);
@@ -99,7 +109,7 @@ int64_t get_parameter_value(uint32_t instruction_idx, uint8_t parameter_number){
     ParMode_t paramode_second   = get_parameter_mode_second(instruction);
     int64_t return_val          = -1;
 
-    if( current_operation == op_ADD || current_operation == op_MULTIPLY )
+    if( current_operation == op_ADD || current_operation == op_MULTIPLY || current_operation == op_LESS || current_operation == op_EQUAL || current_operation == op_JUMP_TRUE || current_operation == op_JUMP_FALSE )
     {
         switch (parameter_number)
         {
@@ -147,10 +157,11 @@ int64_t get_parameter_value(uint32_t instruction_idx, uint8_t parameter_number){
 int64_t run_programm(uint8_t input_program){
     copy(begin(g_diag_program_original), end(g_diag_program_original), begin(diag_program));
 
-    uint32_t idx = 0;
-    uint32_t new_idx_offset = 0;
-    uint64_t current_instruction = diag_program[0];
-    Opcode_t current_op_code = get_opcode(current_instruction);
+    uint32_t idx                    = 0;
+    uint32_t new_idx_offset         = 0;
+    uint64_t current_instruction    = diag_program[0];
+    Opcode_t current_op_code        = get_opcode(current_instruction);
+    bool idx_update                 = true;
 
     int64_t output;
 
@@ -161,15 +172,18 @@ int64_t run_programm(uint8_t input_program){
             uint64_t add_1 = get_parameter_value(idx, 1);
             uint64_t add_2 = get_parameter_value(idx, 2);
             diag_program[diag_program[idx + 3]] = add_1 + add_2;
+            idx_update = true;
         } else if (current_op_code == op_MULTIPLY)
         {
             uint64_t multiplicator_1 = get_parameter_value(idx, 1);
             uint64_t multiplicator_2 = get_parameter_value(idx, 2);
             diag_program[diag_program[idx + 3]] = multiplicator_1 * multiplicator_2;
+            idx_update = true;
         }
         else if (current_op_code == op_SAVE_VAL)
         {
             diag_program[diag_program[idx + 1]] = input_program;
+            idx_update = true;
         }
         else if (current_op_code == op_OUTPUT_VAL)
         {
@@ -177,14 +191,74 @@ int64_t run_programm(uint8_t input_program){
             cout << "------------------\n";
             cout << "Index: " << idx << "\n";
             cout << "Output: " << output << "\n\n";
-        }        
+
+            idx_update = true;
+        }
+        else if (current_op_code == op_JUMP_TRUE)
+        {
+            if( get_parameter_value(idx, 1) == 0)
+            {
+                idx_update = true;
+            }
+            else
+            {
+                idx = get_parameter_value(idx, 2);
+                idx_update = false;
+            }
+        }
+        else if (current_op_code == op_JUMP_FALSE)
+        {
+            if( get_parameter_value(idx, 1) != 0)
+            {
+                idx_update = true;
+            }
+            else
+            {
+                idx = get_parameter_value(idx, 2);
+                idx_update = false;
+            }
+        }
+        else if (current_op_code == op_LESS)
+        {
+            uint64_t compare_1 = get_parameter_value(idx, 1);
+            uint64_t compare_2 = get_parameter_value(idx, 2);
+            if (compare_1 < compare_2)
+            {
+                diag_program[diag_program[idx + 3]] = 1;
+            }
+            else
+            {
+                diag_program[diag_program[idx + 3]] = 0;
+            }
+            idx_update = true;
+        }    
+        else if (current_op_code == op_EQUAL)
+        {
+            uint64_t compare_1 = get_parameter_value(idx, 1);
+            uint64_t compare_2 = get_parameter_value(idx, 2);
+            if (compare_1 == compare_2)
+            {
+                diag_program[diag_program[idx + 3]] = 1;
+            }
+            else
+            {
+                diag_program[diag_program[idx + 3]] = 0;
+            }
+            idx_update = true;
+        }
         else
         {
             return(-1);
         }
 
-        new_idx_offset = get_increase_size(current_instruction);
-        idx = idx + new_idx_offset;
+
+        if (idx_update)
+        {
+            new_idx_offset = get_increase_size(current_instruction);
+            idx = idx + new_idx_offset;
+        }
+        
+
         current_instruction = diag_program[idx];
         current_op_code = get_opcode(current_instruction);
     }
@@ -194,7 +268,7 @@ int64_t run_programm(uint8_t input_program){
 
 int main()
 {
-    uint8_t input = 1;
+    uint8_t input = 5;
     run_programm(input);
     cout << "------------------\n";
     cout << "program ends";
