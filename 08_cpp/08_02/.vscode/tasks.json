@@ -1,0 +1,20 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build 08_02",
+            "type": "shell",
+            "command": "g++",
+            "args": [
+                "-g",
+                "-o",
+                "08_02",
+                "08_02.cpp"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        }
+    ]
+  }
