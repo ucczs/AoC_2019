@@ -293,6 +293,7 @@ int64_t run_with_permutations(int* phase_combination, int no_phases, int first_e
         if (temp_result > maximum)
         {
             maximum = temp_result;
+            cout << "new max with combination " << phase_combination[0] << ", " << phase_combination[1] << ", " << phase_combination[2] << ", " << phase_combination[3] << ", " << phase_combination[4] << endl;
         }
     }
 
