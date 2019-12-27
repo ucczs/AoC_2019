@@ -1,11 +1,21 @@
 #include "09_02.h"
 
-Opcode_t get_opcode(uint16_t instruction){
+CIntcode_computer::CIntcode_computer(/* args */)
+{
+    g_base_adress = 0;
+    copy(begin(g_diag_program_original), end(g_diag_program_original), begin(diag_program));
+}
+
+CIntcode_computer::~CIntcode_computer()
+{
+}
+
+Opcode_t CIntcode_computer::get_opcode(uint16_t instruction){
     Opcode_t operation = static_cast<Opcode_t>(instruction % 100);
     return(operation);
 }
 
-uint8_t get_increase_size(uint16_t instruction){
+uint8_t CIntcode_computer::get_increase_size(uint16_t instruction){
     Opcode_t opcode = get_opcode(instruction);
     switch (opcode)
     {
@@ -29,7 +39,7 @@ uint8_t get_increase_size(uint16_t instruction){
     }
 }
 
-ParMode_t get_parameter_mode_first(uint16_t instruction){
+ParMode_t CIntcode_computer::get_parameter_mode_first(uint16_t instruction){
     int64_t calc_value = instruction % 1'000;
     if (calc_value > 99 && calc_value <= 199)
     {
@@ -45,7 +55,7 @@ ParMode_t get_parameter_mode_first(uint16_t instruction){
     } 
 }
 
-ParMode_t get_parameter_mode_second(uint16_t instruction){
+ParMode_t CIntcode_computer::get_parameter_mode_second(uint16_t instruction){
     int64_t calc_value = instruction % 10'000;
     if (calc_value > 999 && calc_value <= 1'999)
     {
@@ -61,7 +71,7 @@ ParMode_t get_parameter_mode_second(uint16_t instruction){
     } 
 }
 
-ParMode_t get_parameter_mode_third(uint16_t instruction){
+ParMode_t CIntcode_computer::get_parameter_mode_third(uint16_t instruction){
     int64_t calc_value = instruction % 100'000;
     if (calc_value > 9'999 && calc_value <= 19'999)
     {
@@ -77,7 +87,7 @@ ParMode_t get_parameter_mode_third(uint16_t instruction){
     } 
 }
 
-int64_t get_value_based_on_mode(ParMode_t paramode, uint32_t idx_instruction, uint8_t idx_offset){
+int64_t CIntcode_computer::get_value_based_on_mode(ParMode_t paramode, uint32_t idx_instruction, uint8_t idx_offset){
     int64_t return_val = -1;
     if (paramode == IMMEDIATE_MODE)
     {
@@ -95,7 +105,7 @@ int64_t get_value_based_on_mode(ParMode_t paramode, uint32_t idx_instruction, ui
     return(return_val);
 }
 
-void write_value_to_position(int64_t current_instruction, int64_t value_to_write, uint64_t idx)
+void CIntcode_computer::write_value_to_position(int64_t current_instruction, int64_t value_to_write, uint64_t idx)
 {
     ParMode_t parameter_mode = get_parameter_mode_third(current_instruction);
     if (parameter_mode == POSITION_MODE)
@@ -108,7 +118,7 @@ void write_value_to_position(int64_t current_instruction, int64_t value_to_write
     }
 }
 
-int64_t get_parameter_value(uint32_t instruction_idx, ParameterNumber_t parameter_number){
+int64_t CIntcode_computer::get_parameter_value(uint32_t instruction_idx, ParameterNumber_t parameter_number){
     uint16_t instruction        = diag_program[instruction_idx];
     Opcode_t current_operation  = get_opcode(instruction);
     ParMode_t paramode_first    = get_parameter_mode_first(instruction);
@@ -160,10 +170,8 @@ int64_t get_parameter_value(uint32_t instruction_idx, ParameterNumber_t paramete
     return(return_val);    
 }
 
-int64_t run_programm(uint8_t input_program)
+int64_t CIntcode_computer::run_programm(uint8_t input_program)
 {
-    copy(begin(g_diag_program_original), end(g_diag_program_original), begin(diag_program));
-
     uint32_t idx                    = 0;
     uint32_t new_idx_offset         = 0;
     uint64_t current_instruction    = diag_program[idx];
@@ -283,7 +291,8 @@ int64_t run_programm(uint8_t input_program)
 int main()
 {
     uint8_t input = 2;
-    run_programm(input);
+    CIntcode_computer intcoder;
+    intcoder.run_programm(input);
     cout << "------------------\n";
     cout << "program ends";
 
