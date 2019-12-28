@@ -1,8 +1,9 @@
-#include "09_02.h"
+#include "intcode_computer.h"
 
 CIntcode_computer::CIntcode_computer(/* args */)
 {
     g_base_adress = 0;
+    diag_program[size_prog] = {0};
     copy(begin(g_diag_program_original), end(g_diag_program_original), begin(diag_program));
 }
 
@@ -10,12 +11,12 @@ CIntcode_computer::~CIntcode_computer()
 {
 }
 
-Opcode_t CIntcode_computer::get_opcode(uint16_t instruction){
+Opcode_t CIntcode_computer::get_opcode(uint32_t instruction){
     Opcode_t operation = static_cast<Opcode_t>(instruction % 100);
     return(operation);
 }
 
-uint8_t CIntcode_computer::get_increase_size(uint16_t instruction){
+uint8_t CIntcode_computer::get_increase_size(uint32_t instruction){
     Opcode_t opcode = get_opcode(instruction);
     switch (opcode)
     {
@@ -39,7 +40,7 @@ uint8_t CIntcode_computer::get_increase_size(uint16_t instruction){
     }
 }
 
-ParMode_t CIntcode_computer::get_parameter_mode_first(uint16_t instruction){
+ParMode_t CIntcode_computer::get_parameter_mode_first(uint32_t instruction){
     int64_t calc_value = instruction % 1'000;
     if (calc_value > 99 && calc_value <= 199)
     {
@@ -55,7 +56,7 @@ ParMode_t CIntcode_computer::get_parameter_mode_first(uint16_t instruction){
     } 
 }
 
-ParMode_t CIntcode_computer::get_parameter_mode_second(uint16_t instruction){
+ParMode_t CIntcode_computer::get_parameter_mode_second(uint32_t instruction){
     int64_t calc_value = instruction % 10'000;
     if (calc_value > 999 && calc_value <= 1'999)
     {
@@ -71,7 +72,7 @@ ParMode_t CIntcode_computer::get_parameter_mode_second(uint16_t instruction){
     } 
 }
 
-ParMode_t CIntcode_computer::get_parameter_mode_third(uint16_t instruction){
+ParMode_t CIntcode_computer::get_parameter_mode_third(uint32_t instruction){
     int64_t calc_value = instruction % 100'000;
     if (calc_value > 9'999 && calc_value <= 19'999)
     {
@@ -87,17 +88,70 @@ ParMode_t CIntcode_computer::get_parameter_mode_third(uint16_t instruction){
     } 
 }
 
-int64_t CIntcode_computer::get_value_based_on_mode(ParMode_t paramode, uint32_t idx_instruction, uint8_t idx_offset){
+bool CIntcode_computer::check_range(uint64_t index)
+{
+    if (index < size_prog)  return true;
+    else                    return false;
+}
+
+int64_t CIntcode_computer::get_value_from_additional_list(uint64_t index)
+{
+    for (int16_t i = 0; i < additional_elements.size(); i++)
+    {
+        if( additional_elements[i].index == index )
+        {
+            return additional_elements[i].value;
+        }
+    }
+
+    // element doesn't exist yet
+    additional_element new_element;
+    new_element.value = 0;
+    new_element.index = index;
+    additional_elements.push_back(new_element);
+    return new_element.value;
+}
+
+void CIntcode_computer::write_value_to_additional_list(uint64_t index, int64_t value)
+{
+    bool created_flag = false;
+
+    for (int16_t i = 0; i < additional_elements.size(); i++)
+    {
+        if( additional_elements[i].index == index )
+        {
+            created_flag = true;
+            additional_elements[i].value = value;
+        }
+    }
+
+    if(!created_flag)
+    {
+        // element doesn't exist yet
+        additional_element new_element;
+        new_element.value = value;
+        new_element.index = index;
+        additional_elements.push_back(new_element);
+        created_flag = true;
+    }
+
+}
+
+int64_t CIntcode_computer::get_value_based_on_mode(ParMode_t paramode, uint32_t idx_instruction, uint8_t idx_offset)
+{
     int64_t return_val = -1;
     if (paramode == IMMEDIATE_MODE)
     {
-        return_val = diag_program[idx_instruction + idx_offset];
+        if (check_range(idx_instruction + idx_offset) ) return_val = diag_program[idx_instruction + idx_offset];
+        else                                            return_val = get_value_from_additional_list(idx_instruction + idx_offset);
     } else if (paramode == POSITION_MODE)
     {
-        return_val = diag_program[diag_program[idx_instruction + idx_offset]];
+        if (check_range(diag_program[idx_instruction + idx_offset]) )   return_val = diag_program[diag_program[idx_instruction + idx_offset]];
+        else                                                            return_val = get_value_from_additional_list(diag_program[idx_instruction + idx_offset]);
     } else if (paramode == RELATIVE_MODE)
     {
-        return_val = diag_program[diag_program[idx_instruction + idx_offset] + g_base_adress];
+        if (check_range(diag_program[idx_instruction + idx_offset] + g_base_adress) )   return_val = diag_program[diag_program[idx_instruction + idx_offset] + g_base_adress];
+        else                                                                            return_val = get_value_from_additional_list(diag_program[idx_instruction + idx_offset] + g_base_adress);
     } else
     {
         return_val = -1;
@@ -105,21 +159,38 @@ int64_t CIntcode_computer::get_value_based_on_mode(ParMode_t paramode, uint32_t 
     return(return_val);
 }
 
-void CIntcode_computer::write_value_to_position(int64_t current_instruction, int64_t value_to_write, uint64_t idx)
-{
-    ParMode_t parameter_mode = get_parameter_mode_third(current_instruction);
+void CIntcode_computer::write_value_to_position(int64_t current_instruction, int64_t value_to_write, uint64_t idx){
+    ParMode_t parameter_mode;
+    uint8_t idx_offset;
+
+    if ( get_opcode(current_instruction) != op_INPUT_VAL )
+    {
+        parameter_mode  = get_parameter_mode_third(current_instruction);
+        idx_offset      = 3;
+
+    }
+    else if ( get_opcode(current_instruction) == op_INPUT_VAL )
+    {
+        parameter_mode  = get_parameter_mode_first(current_instruction);
+        idx_offset      = 1;
+    }
+    
+
     if (parameter_mode == POSITION_MODE)
     {
-        diag_program[diag_program[idx + 3]] = value_to_write;
+        if (check_range(diag_program[idx + idx_offset]) )   diag_program[diag_program[idx + idx_offset]] = value_to_write;
+        else                                                write_value_to_additional_list(diag_program[idx + idx_offset], value_to_write);
     }
     else if (parameter_mode == RELATIVE_MODE)
     {
-        diag_program[diag_program[idx + 3] + g_base_adress] = value_to_write;
+        if (check_range(diag_program[idx + idx_offset] + g_base_adress) )   diag_program[diag_program[idx + idx_offset] + g_base_adress] = value_to_write;
+        else                                                                write_value_to_additional_list(diag_program[idx + idx_offset] + g_base_adress, value_to_write);
     }
 }
 
+
 int64_t CIntcode_computer::get_parameter_value(uint32_t instruction_idx, ParameterNumber_t parameter_number){
-    uint16_t instruction        = diag_program[instruction_idx];
+    uint32_t instruction        = diag_program[instruction_idx];
     Opcode_t current_operation  = get_opcode(instruction);
     ParMode_t paramode_first    = get_parameter_mode_first(instruction);
     ParMode_t paramode_second   = get_parameter_mode_second(instruction);
@@ -170,13 +241,13 @@ int64_t CIntcode_computer::get_parameter_value(uint32_t instruction_idx, Paramet
     return(return_val);    
 }
 
-int64_t CIntcode_computer::run_programm(uint8_t input_program)
-{
-    uint32_t idx                    = 0;
-    uint32_t new_idx_offset         = 0;
-    uint64_t current_instruction    = diag_program[idx];
-    Opcode_t current_op_code        = get_opcode(current_instruction);
-    bool idx_update                 = true;
+int64_t CIntcode_computer::run_programm(CPainting_robot* painting_robot){
+    uint32_t idx                                    = 0;
+    uint32_t new_idx_offset                         = 0;
+    uint32_t painting_robort_instruction_counter    = 0;
+    uint64_t current_instruction                    = diag_program[idx];
+    Opcode_t current_op_code                        = get_opcode(current_instruction);
+    bool idx_update                                 = true;
 
     int64_t output;
 
@@ -199,15 +270,30 @@ int64_t CIntcode_computer::run_programm(uint8_t input_program)
         }
         else if (current_op_code == op_INPUT_VAL)
         {
-            write_value_to_position(current_instruction, input_program, idx);
+            write_value_to_position(current_instruction, painting_robot->get_current_panel_color(), idx);
             idx_update = true;
         }
         else if (current_op_code == op_OUTPUT_VAL)
         {
             output = get_parameter_value(idx, FIRST_PARAMETER);
-            cout << "------------------\n";
-            cout << "Output: " << output << "\n";
+            //cout << "------------------\n";
+            //cout << "Output: " << output << "\n";
+            //cout << "Robot instruction: " << painting_robort_instruction_counter << "\n";
 
+            // output for painting
+            if (painting_robort_instruction_counter == 0)
+            {
+                painting_robort_instruction_counter++;
+                painting_robot->paint_current_panel( (PanelColor_t)output );
+            } 
+
+            // output for moving
+            else if (painting_robort_instruction_counter == 1)
+            {
+                painting_robort_instruction_counter = 0;
+                painting_robot->turn_and_move( (TurnDirection_t)output );
+            }
+                        
             idx_update = true;
         }
         else if (current_op_code == op_JUMP_TRUE)
@@ -288,12 +374,3 @@ int64_t CIntcode_computer::run_programm(uint8_t input_program)
     return(diag_program[0]);
 }
 
-int main()
-{
-    uint8_t input = 2;
-    CIntcode_computer intcoder;
-    intcoder.run_programm(input);
-    cout << "------------------\n";
-    cout << "program ends";
-
-}
