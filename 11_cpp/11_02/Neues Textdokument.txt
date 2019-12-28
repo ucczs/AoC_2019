@@ -1,0 +1,64 @@
+main:
+g_paint_robot.print_panel_colors();
+
+
+painting_roborter.cpp:
+bool compareInterval(CSpaceship_panel panel1, CSpaceship_panel panel2) 
+{ 
+    if (panel1.y_pos > panel2.y_pos)
+    {
+        return true;
+    }
+    else if (panel1.y_pos < panel2.y_pos)
+    {
+        return false;
+    }
+    else
+    {
+        if ( panel1.x_pos < panel2.x_pos )
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+}
+
+void CPainting_robot::sort_panels()
+{
+    sort(all_panels.begin(), all_panels.end(), compareInterval); 
+}
+
+void CPainting_robot::print_panel_colors()
+{
+    sort_panels();
+
+    int32_t previous_y_pos = 9999999;
+    int32_t current_y;
+    PanelColor_t current_color;
+
+    for (uint16_t i = 0; i < all_panels.size(); i++)
+    {
+        current_y = all_panels[i].y_pos;
+        current_color = all_panels[i].get_current_color();
+
+        if (current_y < previous_y_pos)
+        {
+            previous_y_pos = current_y;
+            cout << endl;
+        }
+
+        if (current_color == COLOR_BLACK)
+        {
+            cout << " ";
+        }
+        else if (current_color == COLOR_WHITE)
+        {
+            cout << "x";
+        }
+    }
+}
+
+
