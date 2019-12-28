@@ -160,18 +160,34 @@ int64_t CIntcode_computer::get_value_based_on_mode(ParMode_t paramode, uint32_t 
 }
 
 void CIntcode_computer::write_value_to_position(int64_t current_instruction, int64_t value_to_write, uint64_t idx){
-    ParMode_t parameter_mode = get_parameter_mode_third(current_instruction);
+    ParMode_t parameter_mode;
+    uint8_t idx_offset;
+
+    if ( get_opcode(current_instruction) != op_INPUT_VAL )
+    {
+        parameter_mode  = get_parameter_mode_third(current_instruction);
+        idx_offset      = 3;
+
+    }
+    else if ( get_opcode(current_instruction) == op_INPUT_VAL )
+    {
+        parameter_mode  = get_parameter_mode_first(current_instruction);
+        idx_offset      = 1;
+    }
+    
+
     if (parameter_mode == POSITION_MODE)
     {
-        if (check_range(diag_program[idx + 3]) )    diag_program[diag_program[idx + 3]] = value_to_write;
-        else                                        write_value_to_additional_list(diag_program[idx + 3], value_to_write);
+        if (check_range(diag_program[idx + idx_offset]) )   diag_program[diag_program[idx + idx_offset]] = value_to_write;
+        else                                                write_value_to_additional_list(diag_program[idx + idx_offset], value_to_write);
     }
     else if (parameter_mode == RELATIVE_MODE)
     {
-        if (check_range(diag_program[idx + 3] + g_base_adress) )    diag_program[diag_program[idx + 3] + g_base_adress] = value_to_write;
-        else                                                        write_value_to_additional_list(diag_program[idx + 3] + g_base_adress, value_to_write);
+        if (check_range(diag_program[idx + idx_offset] + g_base_adress) )   diag_program[diag_program[idx + idx_offset] + g_base_adress] = value_to_write;
+        else                                                                write_value_to_additional_list(diag_program[idx + idx_offset] + g_base_adress, value_to_write);
     }
 }
+
 
 int64_t CIntcode_computer::get_parameter_value(uint32_t instruction_idx, ParameterNumber_t parameter_number){
     uint16_t instruction        = diag_program[instruction_idx];
