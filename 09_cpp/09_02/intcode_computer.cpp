@@ -254,15 +254,15 @@ int64_t CIntcode_computer::run_programm(uint8_t input_program){
     {
         if (current_op_code == op_ADD)
         {
-            uint64_t add_1 = get_parameter_value(idx, FIRST_PARAMETER);
-            uint64_t add_2 = get_parameter_value(idx, SECOND_PARAMETER);
+            int64_t add_1 = get_parameter_value(idx, FIRST_PARAMETER);
+            int64_t add_2 = get_parameter_value(idx, SECOND_PARAMETER);
             int64_t value_to_write = add_1 + add_2;
             write_value_to_position(current_instruction, value_to_write, idx);
             idx_update = true;
         } else if (current_op_code == op_MULTIPLY)
         {
-            uint64_t multiplicator_1 = get_parameter_value(idx, FIRST_PARAMETER);
-            uint64_t multiplicator_2 = get_parameter_value(idx, SECOND_PARAMETER);
+            int64_t multiplicator_1 = get_parameter_value(idx, FIRST_PARAMETER);
+            int64_t multiplicator_2 = get_parameter_value(idx, SECOND_PARAMETER);
             int64_t value_to_write = multiplicator_1 * multiplicator_2;
             write_value_to_position(current_instruction, value_to_write, idx);
             idx_update = true;
@@ -307,8 +307,8 @@ int64_t CIntcode_computer::run_programm(uint8_t input_program){
         }
         else if (current_op_code == op_LESS)
         {
-            uint64_t compare_1 = get_parameter_value(idx, FIRST_PARAMETER);
-            uint64_t compare_2 = get_parameter_value(idx, SECOND_PARAMETER);
+            int64_t compare_1 = get_parameter_value(idx, FIRST_PARAMETER);
+            int64_t compare_2 = get_parameter_value(idx, SECOND_PARAMETER);
             if (compare_1 < compare_2)
             {
                 write_value_to_position(current_instruction, 1, idx);
@@ -321,8 +321,8 @@ int64_t CIntcode_computer::run_programm(uint8_t input_program){
         }    
         else if (current_op_code == op_EQUAL)
         {
-            uint64_t compare_1 = get_parameter_value(idx, FIRST_PARAMETER);
-            uint64_t compare_2 = get_parameter_value(idx, SECOND_PARAMETER);
+            int64_t compare_1 = get_parameter_value(idx, FIRST_PARAMETER);
+            int64_t compare_2 = get_parameter_value(idx, SECOND_PARAMETER);
             if (compare_1 == compare_2)
             {
                 write_value_to_position(current_instruction, 1, idx);
