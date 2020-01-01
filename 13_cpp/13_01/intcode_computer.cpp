@@ -1,5 +1,6 @@
 #include "intcode_computer.h"
 
+
 CIntcode_computer::CIntcode_computer()
 {
     g_base_adress = 0;
@@ -241,7 +242,7 @@ int64_t CIntcode_computer::get_parameter_value(uint32_t instruction_idx, Paramet
     return(return_val);    
 }
 
-int64_t CIntcode_computer::run_programm(uint8_t input_program){
+int64_t CIntcode_computer::run_programm(CGame_map* game_map){
     uint32_t idx                    = 0;
     uint32_t new_idx_offset         = 0;
     uint64_t current_instruction    = diag_program[idx];
@@ -254,30 +255,32 @@ int64_t CIntcode_computer::run_programm(uint8_t input_program){
     {
         if (current_op_code == op_ADD)
         {
-            uint64_t add_1 = get_parameter_value(idx, FIRST_PARAMETER);
-            uint64_t add_2 = get_parameter_value(idx, SECOND_PARAMETER);
+            int64_t add_1 = get_parameter_value(idx, FIRST_PARAMETER);
+            int64_t add_2 = get_parameter_value(idx, SECOND_PARAMETER);
             int64_t value_to_write = add_1 + add_2;
             write_value_to_position(current_instruction, value_to_write, idx);
             idx_update = true;
         } else if (current_op_code == op_MULTIPLY)
         {
-            uint64_t multiplicator_1 = get_parameter_value(idx, FIRST_PARAMETER);
-            uint64_t multiplicator_2 = get_parameter_value(idx, SECOND_PARAMETER);
+            int64_t multiplicator_1 = get_parameter_value(idx, FIRST_PARAMETER);
+            int64_t multiplicator_2 = get_parameter_value(idx, SECOND_PARAMETER);
             int64_t value_to_write = multiplicator_1 * multiplicator_2;
             write_value_to_position(current_instruction, value_to_write, idx);
             idx_update = true;
         }
         else if (current_op_code == op_INPUT_VAL)
         {
-            write_value_to_position(current_instruction, input_program, idx);
+            int8_t joystick_pos = game_map->get_joystick_position();
+            write_value_to_position(current_instruction, joystick_pos, idx);
             idx_update = true;
         }
         else if (current_op_code == op_OUTPUT_VAL)
         {
             output = get_parameter_value(idx, FIRST_PARAMETER);
-            cout << "------------------\n";
-            cout << "current index: " << idx << "\n";
-            cout << "Output: " << output << "\n";        
+            //cout << "------------------\n";
+            //cout << "Output: " << output << "\n";
+
+            game_map->add_instruction(output);
 
             idx_update = true;
         }
@@ -307,8 +310,8 @@ int64_t CIntcode_computer::run_programm(uint8_t input_program){
         }
         else if (current_op_code == op_LESS)
         {
-            uint64_t compare_1 = get_parameter_value(idx, FIRST_PARAMETER);
-            uint64_t compare_2 = get_parameter_value(idx, SECOND_PARAMETER);
+            int64_t compare_1 = get_parameter_value(idx, FIRST_PARAMETER);
+            int64_t compare_2 = get_parameter_value(idx, SECOND_PARAMETER);
             if (compare_1 < compare_2)
             {
                 write_value_to_position(current_instruction, 1, idx);
@@ -321,8 +324,8 @@ int64_t CIntcode_computer::run_programm(uint8_t input_program){
         }    
         else if (current_op_code == op_EQUAL)
         {
-            uint64_t compare_1 = get_parameter_value(idx, FIRST_PARAMETER);
-            uint64_t compare_2 = get_parameter_value(idx, SECOND_PARAMETER);
+            int64_t compare_1 = get_parameter_value(idx, FIRST_PARAMETER);
+            int64_t compare_2 = get_parameter_value(idx, SECOND_PARAMETER);
             if (compare_1 == compare_2)
             {
                 write_value_to_position(current_instruction, 1, idx);
